@@ -12,9 +12,12 @@ class App extends React.Component {
   state = {
     option  :  "none" ,
     leagues : [] ,
+    leagueId : [],
     teams: []
+
   }
   arrName = []
+  arrId = []
   tempTeams = []
 
 
@@ -22,8 +25,7 @@ class App extends React.Component {
   leagueChanged = (event) => {
     this.setState({
       option : event.target.value
-    })
-    this.getTeams();
+    }, () => {this.getTeams()})
   }
 
   componentDidMount() {
@@ -35,28 +37,32 @@ class App extends React.Component {
     then((response)  => {
       response.data.map((item) => {
         return(
-            this.arrName.push(item.name)
+            this.arrName.push(item.name),
+            this.arrId.push(item.id)
         )
       })
       this.setState({
-        leagues : this.arrName
+        leagues : this.arrName,
+        leagueId : this.arrId
       })
     })
   }
 
   getTeams = () => {
-    axios.get("https://app.seker.live/fm1/teams/" + this.state.leagues.indexOf(this.state.option) + 1).
+    if (this.state.option === "none") {
+      return
+    }
+    axios.get("https://app.seker.live/fm1/teams/" + this.state.leagueId[this.state.leagues.indexOf(this.state.option)]).
     then((response) => {
+      this.tempTeams = []
       response.data.map((item) => {
         return (
             this.tempTeams.push(item.name)
         )
       })
       this.setState({
-        teams : this.tempTeams
+        teams: this.tempTeams
       })
-
-
     })
   }
 
@@ -87,7 +93,7 @@ class App extends React.Component {
               <NavLink  style={{margin : "10px"}} to={"./TopScorers"}>Top scorers</NavLink>
             </div>
             <Routes>
-              <Route path={"/Tables"} element = {<Tables/>}></Route>
+              <Route path={"/Tables"} element = {<Tables teams={this.state.teams}/>}></Route>
               <Route path={"/GeneralStatistics"} element = {<GeneralStatistics/>}></Route>
               <Route path={"/ResultsHistory"} element = {<ResultsHistory/>}></Route>
               <Route path={"/TopScorers"} element = {<TopScorers/>}></Route>

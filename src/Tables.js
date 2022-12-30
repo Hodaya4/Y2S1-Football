@@ -10,6 +10,19 @@ function Tables(props) {
                     <th>Goals Delta</th>
                     <th>Name</th>
                 </tr>
+                {
+                    props.teams.map((item) => {
+                        return(
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td>
+                                    {item}
+                                </td>
+                            </tr>
+                        )
+                    })
+                }
 
 
 
