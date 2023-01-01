@@ -14,10 +14,14 @@ function Tables(props) {
                     props.teams.map((item) => {
                         return(
                             <tr>
-                                <td></td>
-                                <td></td>
                                 <td>
-                                    {item}
+                                    {item.points}
+                                </td>
+                                <td>
+                                    {item.goalsDelta}
+                                </td>
+                                <td>
+                                    {item.name}
                                 </td>
                             </tr>
                         )

@@ -13,20 +13,16 @@ class App extends React.Component {
     option  :  "none" ,
     leagues : [] ,
     leagueId : [],
-    teams: []
+    currentLeagueId : 0,
+    teams: [],
+    teamsId : []
 
   }
   arrName = []
   arrId = []
   tempTeams = []
+  arrTeamId = []
 
-
-
-  leagueChanged = (event) => {
-    this.setState({
-      option : event.target.value
-    }, () => {this.getTeams()})
-  }
 
   componentDidMount() {
     this.getLeagues();
@@ -34,17 +30,29 @@ class App extends React.Component {
 
   getLeagues = () => {
     axios.get("https://app.seker.live/fm1/leagues").
-    then((response)  => {
+    then((response) => {
       response.data.map((item) => {
-        return(
+        return (
             this.arrName.push(item.name),
-            this.arrId.push(item.id)
+                this.arrId.push(item.id)
         )
       })
       this.setState({
-        leagues : this.arrName,
-        leagueId : this.arrId
+        leagues: this.arrName,
+        leagueId: this.arrId
       })
+    })
+  }
+
+  leagueChanged = (event) => {
+    let index = this.state.leagues.indexOf(event.target.value)
+    this.setState({
+      option : event.target.value,
+      currentLeagueId : this.state.leagueId[index]
+    }, () => {
+      this.getTeams()
+      this.calcPoints()
+      this.calcGoalsDelta()
     })
   }
 
@@ -52,21 +60,128 @@ class App extends React.Component {
     if (this.state.option === "none") {
       return
     }
-    axios.get("https://app.seker.live/fm1/teams/" + this.state.leagueId[this.state.leagues.indexOf(this.state.option)]).
+    axios.get("https://app.seker.live/fm1/teams/" + this.state.currentLeagueId).
     then((response) => {
       this.tempTeams = []
+      this.arrTeamId = []
       response.data.map((item) => {
         return (
-            this.tempTeams.push(item.name)
+            this.tempTeams.push({name : item.name, points: 0, goalsDelta: 0}),
+            this.arrTeamId.push(item.id)
         )
       })
       this.setState({
-        teams: this.tempTeams
+        teams: this.tempTeams,
+        teamsId: this.arrTeamId
       })
     })
   }
 
+  calcPoints = () => {
+    axios.get("https://app.seker.live/fm1/history/" + this.state.currentLeagueId).
+    then((response) => {
+      response.data.forEach(item => {
+        const homeTeam = item.homeTeam.name
+        const awayTeam = item.awayTeam.name
 
+        if(this.checkForWinner(item.goals) === "home") {
+          let tempTeams = this.state.teams
+          for(let i = 0; i < this.tempTeams.length; i++) {
+            if(this.tempTeams[i].name === homeTeam) {
+              tempTeams[i] = {name : tempTeams[i].name, points : tempTeams[i].points + 3, goalsDelta : tempTeams[i].goalsDelta}
+              break
+            }
+          }
+          this.setState({
+            teams : tempTeams
+          })
+        }
+
+        else if(this.checkForWinner(item.goals) === "away") {
+          let tempTeams = this.state.teams
+          for(let i = 0; i < this.tempTeams.length; i++) {
+            if(this.tempTeams[i].name === awayTeam) {
+              tempTeams[i] = {name : tempTeams[i].name, points : tempTeams[i].points + 3, goalsDelta : tempTeams[i].goalsDelta}
+              break
+            }
+          }
+          this.setState({
+            teams : tempTeams
+          })
+        }
+
+        else {
+          let tempTeams = this.state.teams
+          for(let i = 0; i < this.tempTeams.length; i++) {
+            if(this.tempTeams[i].name === homeTeam) {
+              tempTeams[i] = {name : tempTeams[i].name, points : tempTeams[i].points + 1, goalsDelta : tempTeams[i].goalsDelta}
+              break
+            }
+            if(this.tempTeams[i].name === awayTeam) {
+              tempTeams[i] = {name : tempTeams[i].name, points : tempTeams[i].points + 1, goalsDelta : tempTeams[i].goalsDelta}
+              break
+            }
+          }
+          this.setState({
+            teams : tempTeams
+          })
+        }
+
+      })
+    })
+  }
+
+  checkForWinner = (goals) => {
+    let homeCounter = 0
+    let awayCounter = 0
+    goals.forEach(goal => {
+      if(goal.home) {
+        homeCounter++
+      }
+      else {
+        awayCounter++
+      }
+    });
+    if(homeCounter > awayCounter) {
+      return "home"
+    }
+    else if(awayCounter > homeCounter) {
+      return "away"
+    }
+    return "tie"
+  }
+
+  calcGoalsDelta = () => {
+    let goalsScored, goalsConceded, home, goalsDelta
+    let tempTeams = this.state.teams
+
+    for (let i = 0; i < this.state.teamsId.length; i++) {
+      axios.get("https://app.seker.live/fm1/history/" + this.state.currentLeagueId + "/" + this.state.teamsId[i])
+          .then((response) => {
+            response.data.forEach(item => {
+              goalsScored = 0
+              goalsConceded = 0
+              if (item.homeTeam.id === this.state.teamsId[i]) {
+                home = true
+              }else {
+                home = false
+              }
+              item.goals.forEach(goal => {
+                if (goal.home === home) {
+                  goalsScored++
+                } else {
+                  goalsConceded++
+                }
+              })
+              goalsDelta = goalsScored - goalsConceded
+              tempTeams[i] = {name : tempTeams[i].name, points : tempTeams[i].points, goalsDelta : goalsDelta}
+              this.setState({
+                teams: tempTeams
+              })
+            })
+          })
+    }
+  }
 
 
 
@@ -75,7 +190,7 @@ class App extends React.Component {
         <div className="App">
           <div> Information about soccer leagues:</div>
           Which league would you like?
-          <select value={this.state.option} onChange={this.leagueChanged}>{this.state.option}>
+          <select value={this.state.option} onChange={this.leagueChanged}>{this.state.option}
             <option value={"none"}>None</option>
             {
               this.state.leagues.map((item) => {
