@@ -1,6 +1,6 @@
 import './App.css';
 import React from "react";
-import axios, {get} from "axios";
+import axios from "axios";
 import {BrowserRouter , Routes , Route ,NavLink} from "react-router-dom";
 import Tables from "./Tables";
 import GeneralStatistics from "./GeneralStatistics";
@@ -15,13 +15,11 @@ class App extends React.Component {
     leagueId : [],
     currentLeagueId : 0,
     teams: [],
-    teamsId : []
 
   }
   arrName = []
   arrId = []
   tempTeams = []
-  arrTeamId = []
 
 
   componentDidMount() {
@@ -29,12 +27,12 @@ class App extends React.Component {
   }
 
   getLeagues = () => {
-    axios.get("https://app.seker.live/fm1/leagues").
-    then((response) => {
+    axios.get("https://app.seker.live/fm1/leagues")
+        .then((response) => {
       response.data.map((item) => {
         return (
             this.arrName.push(item.name),
-                this.arrId.push(item.id)
+            this.arrId.push(item.id)
         )
       })
       this.setState({
@@ -51,8 +49,6 @@ class App extends React.Component {
       currentLeagueId : this.state.leagueId[index]
     }, () => {
       this.getTeams()
-      this.calcPoints()
-      this.calcGoalsDelta()
     })
   }
 
@@ -60,26 +56,28 @@ class App extends React.Component {
     if (this.state.option === "none") {
       return
     }
-    axios.get("https://app.seker.live/fm1/teams/" + this.state.currentLeagueId).
-    then((response) => {
+    axios.get("https://app.seker.live/fm1/teams/" + this.state.currentLeagueId)
+        .then((response) => {
       this.tempTeams = []
       this.arrTeamId = []
       response.data.map((item) => {
         return (
-            this.tempTeams.push({name : item.name, points: 0, goalsDelta: 0}),
-            this.arrTeamId.push(item.id)
+            this.tempTeams.push({name : item.name, points: 0, goalsDelta: 0, id: item.id})
+            /*this.arrTeamId.push(item.id)*/
         )
       })
       this.setState({
         teams: this.tempTeams,
-        teamsId: this.arrTeamId
+        /*teamsId: this.arrTeamId*/
+      }, () => {
+        this.calcPoints()
       })
     })
   }
 
   calcPoints = () => {
-    axios.get("https://app.seker.live/fm1/history/" + this.state.currentLeagueId).
-    then((response) => {
+    axios.get("https://app.seker.live/fm1/history/" + this.state.currentLeagueId)
+        .then((response) => {
       response.data.forEach(item => {
         const homeTeam = item.homeTeam.name
         const awayTeam = item.awayTeam.name
@@ -88,12 +86,18 @@ class App extends React.Component {
           let tempTeams = this.state.teams
           for(let i = 0; i < this.tempTeams.length; i++) {
             if(this.tempTeams[i].name === homeTeam) {
-              tempTeams[i] = {name : tempTeams[i].name, points : tempTeams[i].points + 3, goalsDelta : tempTeams[i].goalsDelta}
+              tempTeams[i] = {
+                name : tempTeams[i].name,
+                points : tempTeams[i].points + 3,
+                goalsDelta : tempTeams[i].goalsDelta,
+                id:tempTeams[i].id}
               break
             }
           }
           this.setState({
             teams : tempTeams
+          }, () => {
+            this.calcGoalsDelta()
           })
         }
 
@@ -101,7 +105,11 @@ class App extends React.Component {
           let tempTeams = this.state.teams
           for(let i = 0; i < this.tempTeams.length; i++) {
             if(this.tempTeams[i].name === awayTeam) {
-              tempTeams[i] = {name : tempTeams[i].name, points : tempTeams[i].points + 3, goalsDelta : tempTeams[i].goalsDelta}
+              tempTeams[i] = {
+                name : tempTeams[i].name,
+                points : tempTeams[i].points + 3,
+                goalsDelta : tempTeams[i].goalsDelta,
+                id:tempTeams[i].id}
               break
             }
           }
@@ -114,11 +122,19 @@ class App extends React.Component {
           let tempTeams = this.state.teams
           for(let i = 0; i < this.tempTeams.length; i++) {
             if(this.tempTeams[i].name === homeTeam) {
-              tempTeams[i] = {name : tempTeams[i].name, points : tempTeams[i].points + 1, goalsDelta : tempTeams[i].goalsDelta}
+              tempTeams[i] = {
+                name : tempTeams[i].name,
+                points : tempTeams[i].points + 1,
+                goalsDelta : tempTeams[i].goalsDelta,
+                id:tempTeams[i].id}
               break
             }
             if(this.tempTeams[i].name === awayTeam) {
-              tempTeams[i] = {name : tempTeams[i].name, points : tempTeams[i].points + 1, goalsDelta : tempTeams[i].goalsDelta}
+              tempTeams[i] = {
+                name : tempTeams[i].name,
+                points : tempTeams[i].points + 1,
+                goalsDelta : tempTeams[i].goalsDelta,
+                id:tempTeams[i].id}
               break
             }
           }
@@ -155,13 +171,13 @@ class App extends React.Component {
     let goalsScored, goalsConceded, home, goalsDelta
     let tempTeams = this.state.teams
 
-    for (let i = 0; i < this.state.teamsId.length; i++) {
-      axios.get("https://app.seker.live/fm1/history/" + this.state.currentLeagueId + "/" + this.state.teamsId[i])
+    for (let i = 0; i < this.state.teams.length; i++) {
+      axios.get("https://app.seker.live/fm1/history/" + this.state.currentLeagueId + "/" + this.state.teams[i].id)
           .then((response) => {
             response.data.forEach(item => {
               goalsScored = 0
               goalsConceded = 0
-              if (item.homeTeam.id === this.state.teamsId[i]) {
+              if (item.homeTeam.id === this.state.teams[i].id) {
                 home = true
               }else {
                 home = false
@@ -174,14 +190,46 @@ class App extends React.Component {
                 }
               })
               goalsDelta = goalsScored - goalsConceded
-              tempTeams[i] = {name : tempTeams[i].name, points : tempTeams[i].points, goalsDelta : goalsDelta}
-              this.setState({
-                teams: tempTeams
-              })
+              tempTeams[i] = {
+                name : tempTeams[i].name,
+                points : tempTeams[i].points,
+                goalsDelta : goalsDelta,
+                id : tempTeams[i].id}
+
+            })
+            this.setState({
+              teams: tempTeams
             })
           })
     }
+    this.setState({}, () => {
+      this.sortTeams()
+    })
+
   }
+
+  sortTeams() {
+    let tempTeams = this.state.teams
+    tempTeams  = tempTeams.sort((a, b) => {
+      if (a.points > b.points){
+        return -1
+      }
+      if (a.points  === b.points){
+        if (a.goalsDelta > b.goalsDelta){
+          return -1
+        }
+        if (a.goalsDelta === b.goalsDelta){
+          if (a.name < b.name){
+            return  -1
+          }
+        }
+      }
+    })
+    this.setState ({
+      teams: tempTeams
+    })
+  }
+
 
 
 
@@ -190,7 +238,8 @@ class App extends React.Component {
         <div className="App">
           <div> Information about soccer leagues:</div>
           Which league would you like?
-          <select value={this.state.option} onChange={this.leagueChanged}>{this.state.option}
+          <select value={this.state.option} onChange={this.leagueChanged}>
+            {this.state.option}
             <option value={"none"}>None</option>
             {
               this.state.leagues.map((item) => {
@@ -208,7 +257,10 @@ class App extends React.Component {
               <NavLink  style={{margin : "10px"}} to={"./TopScorers"}>Top scorers</NavLink>
             </div>
             <Routes>
-              <Route path={"/Tables"} element = {<Tables teams={this.state.teams}/>}></Route>
+              <Route path={"/Tables"}
+                     element = {<Tables teams={this.state.teams}
+                                        leagueId={this.state.leagueId}
+                                        checkForWinner={this.checkForWinner}/>}></Route>
               <Route path={"/GeneralStatistics"} element = {<GeneralStatistics/>}></Route>
               <Route path={"/ResultsHistory"} element = {<ResultsHistory/>}></Route>
               <Route path={"/TopScorers"} element = {<TopScorers/>}></Route>
