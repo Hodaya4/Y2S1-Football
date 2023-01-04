@@ -12,7 +12,7 @@ class ResultsHistory extends React.Component {
 
     }
 
-    componentDidMount = () => {
+    getRounds = () => {
         axios.get("https://app.seker.live/fm1/history/" + this.state.leagueId)
             .then((response) => {
                 const lastGame = response.data[response.data.length - 1]
