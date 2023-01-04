@@ -7,8 +7,8 @@ class Tables extends React.Component {
 
     state = {
         playerNames: [],
-
-        teams: []
+        teams: [],
+        currentLeagueId: 0
     }
     tempTeams = []
 
@@ -79,19 +79,20 @@ class Tables extends React.Component {
             })
         this.setState({
             teams: this.tempTeams,
+            currentLeagueId: currentLeagueId
         })
     }
 
-    /*
+
 
 
         playerNameList = (id) => {
             let name
             this.arrPlayerNames = []
-            axios.get("https://app.seker.live/fm1/squad/" + this.props.currentLeagueId + "/" + id)
+            axios.get("https://app.seker.live/fm1/squad/" + this.state.currentLeagueId + "/" + id)
                 .then((response) => {
-                    response.data.forEach(item => {
-                        name = item.firstName + " " + item.lastName
+                    response.data.forEach(player => {
+                        name = player.firstName + " " + player.lastName
                         this.arrPlayerNames.push(name)
                     })
                 })
@@ -104,25 +105,7 @@ class Tables extends React.Component {
 
         showDetails = (id) => {
             this.playerNameList(id)
-            return (
-                <ul>
-                    {
-                        this.state.playerNames.map((item) => {
-                            console.log(item)
-                            return (
-                                <li key={item}>{item}</li>
-                            )
-                        })
-
-                    }
-                </ul>
-
-            )
         }
-
-
-
-    */
 
 
     render() {
@@ -140,9 +123,9 @@ class Tables extends React.Component {
                         {
                             this.state.teams.map((team) => {
                                 return (
-                                    <tr /*onClick={() => {
+                                    <tr onClick={() => {
                                     this.showDetails(team.id)
-                                }}*/>
+                                }}>
                                         <td>
                                             {team.points}
                                         </td>
@@ -160,8 +143,18 @@ class Tables extends React.Component {
                 }
 
                 {
-
-
+                    (this.state.teams.length > 0) &&
+                    <ul>
+                        {
+                            this.state.playerNames.map((player) => {
+                                return(
+                                    <li>
+                                        {player}
+                                    </li>
+                                )
+                            })
+                        }
+                    </ul>
                 }
             </div>
         )
