@@ -8,68 +8,109 @@ class ResultsHistory extends React.Component {
         startRound: 1,
         endRound: 0,
         roundList: [],
-        leagues: []
-
+        games : [],
+        gamesToShow : []
     }
 
-    getRounds = () => {
-        axios.get("https://app.seker.live/fm1/history/" + this.state.leagueId)
+    getRoundResults = (leagueId) => {
+        this.setState({
+            gamesToShow : []
+        })
+        axios.get("https://app.seker.live/fm1/history/" + leagueId)
             .then((response) => {
-                const lastGame = response.data[response.data.length - 1]
+                let tempRoundList = []
+                let lastRound = response.data[response.data.length - 1].round
+                for(let i = 1; i <= lastRound; i++) {
+                    tempRoundList.push(i)
+                }
                 this.setState({
-                    endRound: lastGame.round
+                    roundList : tempRoundList,
+                    startRound : tempRoundList[0],
+                    endRound : tempRoundList[tempRoundList.length - 1]
+                })
+                let tempGames = []
+                response.data.forEach(game => {
+                    const homeTeam = game.homeTeam.name
+                    const awayTeam = game.awayTeam.name
+                    let homeTeamGoals = 0
+                    let awayTeamGoals = 0
+                    game.goals.forEach(goal => {
+                        if(goal.home) {
+                            homeTeamGoals++
+                        }
+                        else {
+                            awayTeamGoals++
+                        }
+                    })
+                    tempGames.push({results : `${homeTeam} ${homeTeamGoals} - ${awayTeamGoals} ${awayTeam}`, round : game.round})
+                })
+                this.setState({
+                    games : tempGames
                 })
             })
-        this.roundList();
     }
 
-    roundList = () => {
-        let tempList = []
-        for (let i = this.state.startRound; i <= this.state.endRound; i++) {
-            tempList.push(i)
+    changeStartRound(event) {
+        const number = event.target.value * 1
+        if(number >= 1 && number <= this.state.roundList.length && number <= this.state.endRound) {
+            this.setState({
+                startRound : number
+            })
         }
+    }
+
+    changeEndRound(event) {
+        const number = event.target.value * 1
+        if(number >= this.state.startRound && number >= 1 && number <= this.state.roundList.length){
+            this.setState({
+                endRound : number
+            })
+        }
+    }
+
+    showRelevantGames() {
+        let tempGames = []
+        this.state.games.forEach((game) => {
+            if(game.round >= this.state.startRound && game.round <= this.state.endRound) {
+                tempGames.push(game.results)
+            }
+        })
         this.setState({
-            roundList : tempList
+            gamesToShow : tempGames
         })
     }
 
-    startRoundChanged = (event) => {
-        this.setState({
-            startRound: event.target.value
-        })
 
-
-    }
-
-    setLeagues = (receivedLeagues) => {
-        this.setState({
-            leagues: receivedLeagues
-        })
-    }
 
     render() {
         return(
             <div>
-                <SelectBox responseClick={this.setLeagues.bind(this)}/>
-                Start:
-                <select value={this.state.startRound} onChange={this.startRoundChanged}>
-                    <option value={"none"} disabled={true}>Select Start Round</option>
+                <SelectBox responseClick={this.getRoundResults.bind(this)}/>
+                {
+                    (this.state.roundList.length >= 1) &&
+                    <div>
+                        Start Round:
+                        <input type="number" value={this.state.startRound} onChange={this.changeStartRound.bind(this)}/>
+                        Last Round:
+                        <input type="number" value={this.state.endRound} onChange={this.changeEndRound.bind(this)}/>
+                        <button onClick={this.showRelevantGames.bind(this)}>Enter</button>
+                    </div>
+                }
+
+                <ul>
                     {
-                        this.state.roundsList.map((item) => {
-                            return (
-                                <option value={item}>{item}</option>
+                        this.state.gamesToShow.map((game) => {
+                            return(
+                                <li>{game}</li>
                             )
                         })
                     }
-                </select>
-
-
+                </ul>
             </div>
         )
     }
-
-
-
 }
+
+
 
 export default ResultsHistory;

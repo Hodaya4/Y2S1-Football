@@ -3,17 +3,18 @@ import axios from "axios";
 import React from "react";
 import SelectBox from "./SelectBox";
 
+
 class Tables extends React.Component {
 
     state = {
         playerNames: [],
         teams: [],
+        currentTeamGames:[],
         currentLeagueId: 0
+
     }
     tempTeams = []
-
     arrPlayerNames = []
-
 
     getTeams = (currentLeagueId) => {
         axios.get("https://app.seker.live/fm1/teams/" + currentLeagueId)
@@ -72,65 +73,83 @@ class Tables extends React.Component {
                                     }
                                 }
                             })
-
+                            this.setState({
+                                teams: this.tempTeams,
+                                currentLeagueId: currentLeagueId
+                            })
                         })
                 })
-
             })
-        this.setState({
-            teams: this.tempTeams,
-            currentLeagueId: currentLeagueId
-        })
     }
 
 
-
-
-        playerNameList = (id) => {
-            let name
-            this.arrPlayerNames = []
-            axios.get("https://app.seker.live/fm1/squad/" + this.state.currentLeagueId + "/" + id)
-                .then((response) => {
-                    response.data.forEach(player => {
-                        name = player.firstName + " " + player.lastName
-                        this.arrPlayerNames.push(name)
-                    })
+    playerNameList = (id) => {
+        let name
+        this.arrPlayerNames = []
+        axios.get("https://app.seker.live/fm1/squad/" + this.state.currentLeagueId + "/" + id)
+            .then((response) => {
+                response.data.forEach(player => {
+                    name = player.firstName + " " + player.lastName
+                    this.arrPlayerNames.push(name)
                 })
-            this.setState({
-                playerNames: this.arrPlayerNames
-            },() => {
-                console.log(this.state.playerNames)
+                this.setState({
+                    playerNames: this.arrPlayerNames
+                })
             })
-        }
+    }
 
-        showDetails = (id) => {
-            this.playerNameList(id)
-        }
+    gamesHistory = (id) => {
+        let homeTeam, awayTeam, homeGoals, awayGoals
+        let tempTeamGames = []
+        axios.get("https://app.seker.live/fm1/history/" + this.state.currentLeagueId + "/" + id)
+            .then((response) => {
+                response.data.forEach(game => {
+                    homeGoals = 0;
+                    awayGoals = 0;
+                    homeTeam = game.homeTeam.name;
+                    awayTeam = game.awayTeam.name;
+                    game.goals.forEach(goal => {
+                        if (goal.home) {
+                            homeGoals++
+                        } else {
+                            awayGoals++
+                        }
+                    })
+                    tempTeamGames.push(homeTeam + " " + homeGoals + " - " + awayGoals + " " + awayTeam)
+                })
+                this.setState({
+                    currentTeamGames: tempTeamGames
+                })
+            })
+    }
+
+    showDetails = (id) => {
+        this.playerNameList(id)
+        this.gamesHistory(id)
+    }
+
 
 
     render() {
         return (
             <div>
                 <SelectBox responseClick={this.getTeams.bind(this)}/>
+                <br/>
                 {
                     (this.state.teams.length > 0) &&
                     <table>
                         <tr>
                             <th>Points</th>
-                            <th>Goals Delta</th>
                             <th>Name</th>
                         </tr>
                         {
                             this.state.teams.map((team) => {
                                 return (
                                     <tr onClick={() => {
-                                    this.showDetails(team.id)
-                                }}>
+                                        this.showDetails(team.id)
+                                    }}>
                                         <td>
                                             {team.points}
-                                        </td>
-                                        <td>
-                                            {team.goalsDelta}
                                         </td>
                                         <td>
                                             {team.name}
@@ -141,9 +160,8 @@ class Tables extends React.Component {
                         }
                     </table>
                 }
-
                 {
-                    (this.state.teams.length > 0) &&
+                    (this.state.playerNames.length > 0) &&
                     <ul>
                         {
                             this.state.playerNames.map((player) => {
@@ -156,9 +174,25 @@ class Tables extends React.Component {
                         }
                     </ul>
                 }
+                {
+                    (this.state.playerNames.length > 0) &&
+                    <ul>
+                        {
+                            this.state.currentTeamGames.map((game) => {
+                                return(
+                                    <li>
+                                        {game}
+                                    </li>
+                                )
+                            })
+                        }
+                    </ul>
+                }
             </div>
         )
     }
 }
+
+
 
 export default Tables;

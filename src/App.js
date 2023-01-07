@@ -1,6 +1,5 @@
 import './App.css';
 import React from "react";
-import axios from "axios";
 import {BrowserRouter , Routes , Route ,NavLink} from "react-router-dom";
 import Tables from "./Tables";
 import GeneralStatistics from "./GeneralStatistics";
@@ -18,7 +17,7 @@ class App extends React.Component {
     return (
         <div className="App">
           <BrowserRouter>
-            <div>
+            <div className='container'>
               <NavLink  style={{margin : "10px"}} to={"./Tables"}>Tables</NavLink>
               <NavLink  style={{margin : "10px"}} to={"./GeneralStatistics"}>General statistics</NavLink>
               <NavLink  style={{margin : "10px"}} to={"./ResultsHistory"}>Results history</NavLink>
